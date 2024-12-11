@@ -39,4 +39,7 @@ async fn main() {
 async fn sigint(key_presses_tx: Sender<Keycode>) {
     tokio::signal::ctrl_c().await.unwrap();
     key_presses_tx.send_async(Keycode::Q).await.unwrap();
+    tokio::signal::ctrl_c().await.unwrap();
+    log::warn!(target: "Main", "Force exit by the user with CTRL+C");
+    std::process::exit(0);
 }
