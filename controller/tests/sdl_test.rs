@@ -214,7 +214,7 @@ impl Tester {
         }
     }
 
-    fn test_output(&self, delay: Duration) -> impl Future<Output = ()> {
+    fn test_output(&self, delay: Duration) -> impl Future<Output = ()> + use<> {
         let key_presses = self.key_presses.clone();
         let event_watcher = self.events_watcher.clone();
         let (width, height) = (self.args.image_width, self.args.image_height);
@@ -238,7 +238,7 @@ impl Tester {
         }
     }
 
-    fn test_pause(&self, delay: Duration) -> impl Future<Output = ()> {
+    fn test_pause(&self, delay: Duration) -> impl Future<Output = ()> + use<> {
         let key_presses = self.key_presses.clone();
         let event_watcher = self.events_watcher.clone();
         let test_output = self.test_output(Duration::from_secs(2));
@@ -267,7 +267,7 @@ impl Tester {
         }
     }
 
-    fn test_quitting(&self, delay: Duration) -> impl Future<Output = ()> {
+    fn test_quitting(&self, delay: Duration) -> impl Future<Output = ()> + use<> {
         let key_presses = self.key_presses.clone();
         let event_watcher = self.events_watcher.clone();
         async move {
