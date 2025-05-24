@@ -1,12 +1,14 @@
 use clap::Parser;
-use flume::Sender;
-use log::Level;
-use sdl2::keyboard::Keycode;
-use tokio::try_join;
 use gol_rs_controller::args::Args;
 use gol_rs_controller::gol::{self, event::Event};
 use gol_rs_controller::sdl;
 use gol_rs_controller::util::logger;
+use log::Level;
+use sdl2::keyboard::Keycode;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+use tokio::try_join;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -21,7 +23,7 @@ async fn main() {
     let (key_presses_tx, key_presses_rx) = flume::bounded::<Keycode>(10);
     let (events_tx, events_rx) = flume::bounded::<Event>(1000);
 
-    tokio::spawn(sigint(key_presses_tx.clone()));
+    tokio::spawn(sigint());
 
     if !args.headless {
         try_join!(
@@ -36,7 +38,23 @@ async fn main() {
     }
 }
 
-async fn sigint(key_presses_tx: Sender<Keycode>) {
-    tokio::signal::ctrl_c().await.unwrap();
-    key_presses_tx.send_async(Keycode::Q).await.unwrap();
+async fn sigint() {
+    let exit = Arc::new(AtomicBool::new(false));
+    loop {
+        tokio::signal::ctrl_c().await.unwrap();
+        if exit.load(Ordering::SeqCst) {
+            log::warn!(target: "Main", "Force quit by the user");
+            std::process::exit(0);
+        } else {
+            log::warn!(target: "Main", "Press Ctrl+C again to force quit");
+            exit.store(true, Ordering::SeqCst);
+            tokio::spawn({
+                let exit = Arc::clone(&exit);
+                async move {
+                    tokio::time::sleep(Duration::from_secs(4)).await;
+                    exit.store(false, Ordering::SeqCst);
+                }
+            });
+        }
+    }
 }
